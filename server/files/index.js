@@ -43,15 +43,18 @@ function appendMovie(movie, element) {
 
 function loadMovies(genre) {
   const xhr = new XMLHttpRequest();
+
   xhr.onload = function () {
     const mainElement = document.querySelector("main");
 
+    // alte filme löschen
     while (mainElement.childElementCount > 0) {
       mainElement.firstChild.remove()
     }
 
     if (xhr.status === 200) {
       const movies = JSON.parse(xhr.responseText)
+
       for (const movie of movies) {
         appendMovie(movie, mainElement)
       }
@@ -61,7 +64,15 @@ function loadMovies(genre) {
   }
 
   const url = new URL("/movies", location.href)
-  /* Task 1.4. Add query parameter to the url if a genre is given */
+
+  /* Task 1.4 / Task 2.2:
+     - wenn ein genre vorhanden ist, wird es als query parameter angehängt
+     - daraus wird z.B. /movies?genre=Action
+     - server kann es dann mit req.query.genre lesen
+  */
+  if (genre) {
+    url.searchParams.set("genre", genre);
+  }
 
   xhr.open("GET", url)
   xhr.send()
@@ -69,24 +80,57 @@ function loadMovies(genre) {
 
 window.onload = function () {
   const xhr = new XMLHttpRequest();
+
   xhr.onload = function () {
     const listElement = document.querySelector("nav>ul");
 
     if (xhr.status === 200) {
-      /* Task 1.3. Add the genre buttons to the listElement and 
-         initialize them with a click handler that calls the 
-         loadMovies(...) function above. */
+
+      /* Task 1.3:
+         - buttons für alle genres erstellen
+         - jeder button ruft loadMovies(genre) auf
+      */
       const genres = JSON.parse(xhr.responseText);
+
+      // ALL button
+      const allListItem = document.createElement("li");
+      const allButton = document.createElement("button");
+
+      allButton.textContent = "All";
+
+      allButton.onclick = function () {
+        loadMovies(); // ohne genre = alle filme
+      };
+
+      allListItem.appendChild(allButton);
+      listElement.appendChild(allListItem);
+
+      // buttons für jedes genre
+      genres.forEach(function (genre) {
+        const listItem = document.createElement("li");
+        const button = document.createElement("button");
+
+        button.textContent = genre;
+
+        button.onclick = function () {
+          loadMovies(genre); // genre wird übergeben
+        };
+
+        listItem.appendChild(button);
+        listElement.appendChild(listItem);
+      });
 
       /* When a first button exists, we click it to load all movies. */
       const firstButton = document.querySelector("nav button");
       if (firstButton) {
         firstButton.click();
       }
+
     } else {
       document.querySelector("body").append(`Daten konnten nicht geladen werden, Status ${xhr.status} - ${xhr.statusText}`);
     }
   };
+
   xhr.open("GET", "/genres");
   xhr.send();
 };
